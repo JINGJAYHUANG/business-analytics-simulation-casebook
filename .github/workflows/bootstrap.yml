@@ -50,11 +50,11 @@ jobs:
               raise SystemExit('archive byte length mismatch')
           if hashlib.sha256(archive_bytes).hexdigest() != manifest['sha256']:
               raise SystemExit('archive digest mismatch')
-          archive = Path('/tmp/business-analytics-casebook-source.tar.gz')
+          archive = Path('/tmp/business-analytics-casebook-source.tar.xz')
           archive.write_bytes(archive_bytes)
           destination = Path('/tmp/business-analytics-casebook-source')
           destination.mkdir(parents=True, exist_ok=True)
-          with tarfile.open(archive, 'r:gz') as handle:
+          with tarfile.open(archive, 'r:xz') as handle:
               members = handle.getmembers()
               if len([m for m in members if m.isfile()]) != manifest['file_count']:
                   raise SystemExit('archive file-count mismatch')
