@@ -71,10 +71,11 @@ jobs:
             --exclude='.github/workflows/' \
             --exclude='.bootstrap/' \
             /tmp/business-analytics-casebook-source/ ./
-      - name: Qualify expanded source
+      - name: Generate and qualify public fixture
         shell: bash
         run: |
           set -euo pipefail
+          PYTHONPATH=src python scripts/rebuild_examples.py --root examples/synthetic_company
           python -m compileall -q src scripts tests
           PYTHONPATH=src python scripts/verify_test_count.py
           PYTHONPATH=src python -m unittest discover -s tests -q
