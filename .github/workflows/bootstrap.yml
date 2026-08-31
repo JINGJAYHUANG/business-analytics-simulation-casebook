@@ -1,0 +1,97 @@
+name: Bootstrap source
+
+on:
+  push:
+    branches: [feat/public-v0.1.0]
+    paths: [.bootstrap/ready.txt]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bootstrap-business-analytics-casebook
+  cancel-in-progress: false
+
+jobs:
+  expand:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out bootstrap branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feat/public-v0.1.0
+      - name: Verify and expand source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json, tarfile
+
+          root = Path('.bootstrap')
+          manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
+          encoded_parts = []
+          for item in manifest['parts']:
+              path = root / item['name']
+              text = path.read_text(encoding='ascii')
+              if len(text) != item['chars']:
+                  raise SystemExit(f"part length mismatch: {path}")
+              if hashlib.sha256(text.encode('ascii')).hexdigest() != item['sha256']:
+                  raise SystemExit(f"part digest mismatch: {path}")
+              encoded_parts.append(text)
+          encoded = ''.join(encoded_parts)
+          if len(encoded) != manifest['base64_chars']:
+              raise SystemExit('base64 length mismatch')
+          if hashlib.sha256(encoded.encode('ascii')).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('base64 digest mismatch')
+          archive_bytes = base64.b64decode(encoded, validate=True)
+          if len(archive_bytes) != manifest['bytes']:
+              raise SystemExit('archive byte length mismatch')
+          if hashlib.sha256(archive_bytes).hexdigest() != manifest['sha256']:
+              raise SystemExit('archive digest mismatch')
+          archive = Path('/tmp/business-analytics-casebook-source.tar.gz')
+          archive.write_bytes(archive_bytes)
+          destination = Path('/tmp/business-analytics-casebook-source')
+          destination.mkdir(parents=True, exist_ok=True)
+          with tarfile.open(archive, 'r:gz') as handle:
+              members = handle.getmembers()
+              if len([m for m in members if m.isfile()]) != manifest['file_count']:
+                  raise SystemExit('archive file-count mismatch')
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+                  if member.issym() or member.islnk() or member.isdev():
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              handle.extractall(destination, filter='data')
+          PY
+          rsync -a --delete-excluded \
+            --exclude='.git/' \
+            --exclude='.github/workflows/' \
+            --exclude='.bootstrap/' \
+            /tmp/business-analytics-casebook-source/ ./
+      - name: Qualify expanded source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m compileall -q src scripts tests
+          PYTHONPATH=src python scripts/verify_test_count.py
+          PYTHONPATH=src python -m unittest discover -s tests -q
+          PYTHONPATH=src python scripts/public_audit.py .
+          PYTHONPATH=src python scripts/check_markdown_links.py .
+          PYTHONPATH=src python scripts/rebuild_examples.py --check
+          PYTHONPATH=src python scripts/red_team.py examples/synthetic_company/output --output /tmp/red-team.json
+      - name: Commit expanded source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- ':!.bootstrap' ':!.github/workflows/bootstrap.yml'
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m 'feat: publish original synthetic business analytics casebook'
+          git push origin HEAD:feat/public-v0.1.0
