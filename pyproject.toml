@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "business-analytics-simulation-casebook"
+version = "0.1.0"
+description = "Original synthetic business analytics cases with auditable SQL, segmentation, experiment, data-quality, and reporting workflows."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "JINGJAYHUANG"}]
+keywords = ["business-analytics", "sql", "ab-testing", "supply-chain", "data-quality", "simulation"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = []
+
+[project.scripts]
+basc = "business_analytics_casebook.cli:main"
+business-analytics-casebook = "business_analytics_casebook.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+business_analytics_casebook = ["catalog/*.json"]

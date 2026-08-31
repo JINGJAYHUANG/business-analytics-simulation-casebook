@@ -1,0 +1,17 @@
+return_id,line_id,return_date,quantity,reason
+RET-0001,LIN-00011,2026-05-05,2,wrong_item
+RET-0002,LIN-00022,2026-05-28,1,customer_change
+RET-0003,LIN-00033,2026-06-20,1,damaged
+RET-0004,LIN-00034,2026-06-21,1,wrong_item
+RET-0005,LIN-00035,2026-06-22,2,customer_change
+RET-0006,LIN-00044,2026-04-14,1,damaged
+RET-0007,LIN-00055,2026-05-07,2,wrong_item
+RET-0008,LIN-00066,2026-05-27,2,customer_change
+RET-0009,LIN-00067,2026-05-31,1,damaged
+RET-0010,LIN-00068,2026-06-01,1,wrong_item
+RET-0011,LIN-00088,2026-04-14,1,customer_change
+RET-0012,LIN-00099,2026-05-07,2,damaged
+RET-0013,LIN-00102,2026-05-11,1,wrong_item
+RET-0014,LIN-00110,2026-05-28,1,customer_change
+RET-0015,LIN-00121,2026-06-20,2,damaged
+RET-ORPHAN,LIN-MISSING,2026-06-29,1,unknown_reference

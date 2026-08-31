@@ -1,0 +1,9 @@
+segment,variant,assigned,opened,applied,unsubscribed
+organic,control,400,210,72,4
+organic,treatment,500,295,100,8
+paid_search,control,200,88,24,3
+paid_search,treatment,900,430,126,18
+career_fair,control,400,250,100,5
+career_fair,treatment,300,202,81,6
+referral,control,800,610,280,6
+referral,treatment,100,80,37,2

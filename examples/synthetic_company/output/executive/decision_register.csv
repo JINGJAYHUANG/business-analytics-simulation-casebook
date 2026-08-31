@@ -1,0 +1,5 @@
+decision_id,area,decision,evidence,caveat,next_action
+DEC-001,Supply chain,Adopt differentiated service policies by operating segment.,Deterministic 4-segment solution; silhouette 0.759942.,Clusters are descriptive and require operational pilots before causal claims.,Pilot policy changes with pre-defined service and total-cost measures.
+DEC-002,Finance and reporting,Publish only the reconciled order-grain quarterly fact table.,Naive raw joins inflate gross revenue by 12.0%.,Orphan and duplicate records remain data-governance issues even after quarantine.,Add uniqueness and referential-integrity checks upstream of reporting.
+DEC-003,Growth experiment,RE-RANDOMIZE_AND_CONFIRM,Naive effect -7.3%; post-stratified effect +2.0%.,Large pre-treatment mix imbalance creates an aggregate sign reversal.,Run a segment-blocked confirmatory experiment with a pre-specified estimand.
+DEC-004,Quality analytics,FIX_METRIC_PIPELINE_AND_SOURCE_RELIABILITY,Naive failure-rate change +5.3%; workflow-level change +0.0%.,Retry burden is operationally important even when final customer impact is stable.,Fix duplicate instrumentation and address the concentrated timeout source.

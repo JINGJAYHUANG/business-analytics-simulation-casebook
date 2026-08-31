@@ -1,0 +1,7 @@
+source_system,reason,failure_event_count
+partner,partner_timeout,16
+mobile,transient_timeout,15
+web,transient_timeout,14
+mobile,upstream_unavailable,4
+partner,upstream_unavailable,4
+web,upstream_unavailable,2

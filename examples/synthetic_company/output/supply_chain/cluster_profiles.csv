@@ -1,0 +1,5 @@
+cluster_id,lane_count,annual_units,annual_units_share,landed_cost_per_unit,lead_time_days,service_gap,defect_rate,demand_cv,expedite_rate,on_time_rate,fill_rate,carbon_kg_per_unit,segment,policy
+0,20,100735,0.2792663419,13.0495,13.7675,0.129625,0.01904,0.684425,0.157475,0.870375,0.90229,1.1481,volatile_growth,add flexibility before volume
+1,20,59364,0.1645740519,16.5895,30.8075,0.24353,0.04398,0.478315,0.281525,0.75647,0.81592,1.92875,constrained_recovery,contain exposure and improve capability
+2,20,118170,0.3276011677,15.413,9.578,0.03301,0.00556,0.18122,0.02538,0.973105,0.98245,1.08865,strategic_reliable,protect strategic capacity
+3,20,82444,0.2285584384,10.8035,17.582,0.0731,0.012435,0.28195,0.05549,0.93137,0.939455,0.76445,cost_efficient_routine,standardize and automate

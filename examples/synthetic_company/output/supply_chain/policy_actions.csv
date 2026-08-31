@@ -1,0 +1,5 @@
+segment,policy,action,risk
+strategic_reliable,protect strategic capacity,"Use collaborative forecasting, longer commitments, and quarterly resilience reviews.",Over-dependence can hide concentration risk even when service is strong.
+cost_efficient_routine,standardize and automate,"Use stable reorder parameters, low-touch replenishment, and exception-based management.",Low unit cost should not justify reducing service monitoring below the agreed floor.
+volatile_growth,add flexibility before volume,"Use shorter planning cycles, option capacity, and demand-triggered buffers.",Average demand conceals volatility; fixed commitments can create inventory whiplash.
+constrained_recovery,contain exposure and improve capability,"Set corrective-action milestones, dual-source critical items, and cap expedited spend.",A cost-only sourcing decision can turn service and quality losses into hidden total cost.

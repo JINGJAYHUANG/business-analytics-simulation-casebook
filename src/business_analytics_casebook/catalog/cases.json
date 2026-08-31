@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "project": "business-analytics-simulation-casebook",
+  "synthetic": true,
+  "cases": [
+    {
+      "case_id": "supply_chain",
+      "title": "Supplier-lane segmentation and operating policy",
+      "decision": "Which supplier-lane relationships require different planning and service policies?",
+      "audience": "Supply-chain and operations leaders",
+      "unit_of_analysis": "One supplier-lane relationship",
+      "primary_methods": ["deterministic k-means", "silhouette comparison", "cluster profiling", "policy translation"],
+      "main_traps": ["treating clusters as causal", "ignoring scale", "using raw units without standardization"]
+    },
+    {
+      "case_id": "accounting",
+      "title": "Order-to-cash accounting integration",
+      "decision": "What quarterly revenue, margin, cash, and receivable numbers are defensible?",
+      "audience": "Finance, business operations, and analytics teams",
+      "unit_of_analysis": "One completed commercial order after source-level aggregation",
+      "primary_methods": ["grain contracts", "deduplication", "referential-integrity checks", "reconciliation", "SQL-ready fact modeling"],
+      "main_traps": ["many-to-many join explosion", "duplicate payments", "orphan returns", "cash equals revenue"]
+    },
+    {
+      "case_id": "experiment",
+      "title": "Campaign A/B test with composition imbalance",
+      "decision": "Should the treatment campaign be rolled out?",
+      "audience": "Growth, people analytics, and product teams",
+      "unit_of_analysis": "One randomized participant within a pre-treatment segment",
+      "primary_methods": ["conversion analysis", "Wilson intervals", "two-proportion test", "post-stratification", "Simpson's paradox detection"],
+      "main_traps": ["pooled comparison under imbalance", "causal overclaim", "ignoring guardrails", "unmonitored allocation"]
+    },
+    {
+      "case_id": "quality",
+      "title": "QA metric and instrumentation troubleshooting",
+      "decision": "Did customer-facing quality deteriorate, or did instrumentation and retries change the metric?",
+      "audience": "Operations, engineering, and quality leaders",
+      "unit_of_analysis": "One unique workflow for outcome metrics; one emitted event for instrumentation metrics",
+      "primary_methods": ["event deduplication", "grain-specific metrics", "retry decomposition", "root-cause concentration"],
+      "main_traps": ["denominator shift", "duplicate events", "retry events counted as customer failures", "aggregate root-cause narrative"]
+    }
+  ]
+}

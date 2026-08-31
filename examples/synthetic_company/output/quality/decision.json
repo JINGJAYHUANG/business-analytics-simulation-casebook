@@ -1,0 +1,1 @@
+{"corrected_week_over_week_change":0.0,"duplicate_event_rate":0.01982379,"naive_week_over_week_change":0.05303031,"recommendation":"Do not describe the raw event spike as a customer-facing quality collapse. Repair duplicate logging, preserve workflow-level denominators, and investigate the concentrated timeout source.","status":"FIX_METRIC_PIPELINE_AND_SOURCE_RELIABILITY"}
