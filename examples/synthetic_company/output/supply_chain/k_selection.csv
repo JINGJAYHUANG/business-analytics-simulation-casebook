@@ -1,0 +1,6 @@
+k,silhouette_score,minimum_cluster_size,maximum_cluster_size,eligible
+2,0.592899,20,60,true
+3,0.604966,20,40,true
+4,0.759942,20,20,true
+5,0.648438,10,20,true
+6,0.639943,5,20,false

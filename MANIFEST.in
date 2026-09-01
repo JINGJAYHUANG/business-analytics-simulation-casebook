@@ -1,0 +1,8 @@
+include README.md LICENSE CHANGELOG.md SECURITY.md CONTRIBUTING.md CITATION.cff
+recursive-include src/business_analytics_casebook/catalog *.json
+recursive-include docs *.md
+recursive-include case_briefs *.md
+recursive-include catalog *.json
+recursive-include schemas *.json
+recursive-include sql *.sql
+recursive-include examples *.json *.csv *.md *.html *.sqlite *.jsonl

@@ -1,0 +1,100 @@
+name: Patch Python 3.11 fixture
+
+on:
+  push:
+    branches: [feat/public-v0.1.0]
+    paths: [.patch/ready.txt]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: patch-python311-business-analytics-casebook
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out feature branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feat/public-v0.1.0
+      - name: Set up Python 3.11
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.11"
+      - name: Verify and apply patch archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          import base64, hashlib, json, tarfile
+
+          root = Path('.patch')
+          manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
+          encoded_parts = []
+          for item in manifest['parts']:
+              path = root / item['name']
+              text = path.read_text(encoding='ascii')
+              if len(text) != item['chars']:
+                  raise SystemExit(f"part length mismatch: {path}")
+              if hashlib.sha256(text.encode('ascii')).hexdigest() != item['sha256']:
+                  raise SystemExit(f"part digest mismatch: {path}")
+              encoded_parts.append(text)
+          encoded = ''.join(encoded_parts)
+          if len(encoded) != manifest['base64_chars']:
+              raise SystemExit('base64 length mismatch')
+          if hashlib.sha256(encoded.encode('ascii')).hexdigest() != manifest['base64_sha256']:
+              raise SystemExit('base64 digest mismatch')
+          archive_bytes = base64.b64decode(encoded, validate=True)
+          if len(archive_bytes) != manifest['bytes']:
+              raise SystemExit('archive byte length mismatch')
+          if hashlib.sha256(archive_bytes).hexdigest() != manifest['sha256']:
+              raise SystemExit('archive digest mismatch')
+          archive = Path('/tmp/basc-python311-fix.tar.xz')
+          archive.write_bytes(archive_bytes)
+          with tarfile.open(archive, 'r:xz') as handle:
+              members = handle.getmembers()
+              for member in members:
+                  path = Path(member.name)
+                  if path.is_absolute() or '..' in path.parts:
+                      raise SystemExit(f'unsafe archive path: {member.name}')
+                  if member.issym() or member.islnk() or member.isdev():
+                      raise SystemExit(f'unsafe archive member: {member.name}')
+              handle.extractall(Path('.'), filter='data')
+          PY
+      - name: Qualify patch on Python 3.11
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install .
+          python -m compileall -q src scripts tests
+          python scripts/verify_test_count.py
+          python -m unittest discover -s tests -q
+          python scripts/rebuild_examples.py --check
+          basc verify --run-dir examples/synthetic_company/output
+          rm -rf /tmp/demo-a /tmp/demo-b
+          basc demo --root /tmp/demo-a --fixed-time 2026-09-01T00:00:00Z --overwrite > /tmp/demo-a.json
+          basc demo --root /tmp/demo-b --fixed-time 2026-09-01T00:00:00Z --overwrite > /tmp/demo-b.json
+          diff -qr /tmp/demo-a /tmp/demo-b
+          basc verify --run-dir /tmp/demo-a/output
+          python scripts/red_team.py examples/synthetic_company/output --output /tmp/red-team.json
+      - name: Commit cross-version stable evidence bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            README.md \
+            docs/release-verification.md \
+            src/business_analytics_casebook/clustering.py \
+            examples/synthetic_company/output/artifact_manifest.json \
+            examples/synthetic_company/output/casebook.sqlite \
+            examples/synthetic_company/output/events.jsonl \
+            examples/synthetic_company/output/run_manifest.json
+          git commit -m 'fix: stabilize cluster evidence across Python versions'
+          git push origin HEAD:feat/public-v0.1.0

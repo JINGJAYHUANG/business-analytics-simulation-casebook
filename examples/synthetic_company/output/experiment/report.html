@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>A/B experiment audit</title>
+<style>
+:root{--paper:#f7f5ef;--ink:#182026;--muted:#65717a;--line:#cfd6d9;--accent:#244c66;--card:#ffffff}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:42px 26px 70px}h1{font-size:clamp(30px,5vw,58px);line-height:1.02;margin:0 0 12px;letter-spacing:-.035em}h2{margin:42px 0 14px;font-size:24px}.lead{font-size:19px;color:var(--muted);max-width:820px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:28px 0}.cards div{background:var(--card);border:1px solid var(--line);padding:18px;border-radius:12px}.cards strong{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em}.cards span{display:block;font-size:27px;font-weight:750;margin-top:4px}.cards span.small{font-size:15px;line-height:1.3}
+table{width:100%;border-collapse:collapse;background:var(--card);font-size:13px}th,td{padding:10px 9px;border:1px solid var(--line);text-align:left;vertical-align:top}th{background:#e8edf0;color:#263844;position:sticky;top:0}tr:nth-child(even) td{background:#fbfcfc}code{background:#e8edf0;padding:2px 5px;border-radius:4px}@media(max-width:720px){main{padding:26px 14px}table{display:block;overflow-x:auto}th,td{min-width:120px}}
+</style>
+</head>
+<body><main>
+<h1>Case 3 — A/B experiment audit</h1>
+<p class="lead">Separate treatment effect from traffic-mix composition before making a rollout decision.</p>
+<div class="cards"><div><strong>Naive effect</strong><span>-7.3%</span></div><div><strong>Stratified effect</strong><span>+2.0%</span></div><div><strong>Decision</strong><span class="small">RE-RANDOMIZE_AND_CONFIRM</span></div></div>
+<h2>Aggregate result</h2><table><thead><tr><th>Control</th><th>Treatment</th><th>Effect</th><th>Lift</th><th>p-value</th></tr></thead><tbody><tr><td>0.264444</td><td>0.191111</td><td>-0.0733333</td><td>-0.277311</td><td>1.6e-07</td></tr></tbody></table>
+<h2>Post-stratified result</h2><table><thead><tr><th>Std control</th><th>Std treatment</th><th>Effect</th><th>p-value</th><th>Unsubscribe effect</th><th>Mix distance</th><th>Simpson reversal</th></tr></thead><tbody><tr><td>0.217778</td><td>0.237778</td><td>0.02</td><td>0.256657</td><td>0.00761111</td><td>0.444444</td><td>True</td></tr></tbody></table>
+<h2>Segment effects</h2><table><thead><tr><th>Segment</th><th>Weight</th><th>Control n</th><th>Treatment n</th><th>Control</th><th>Treatment</th><th>Effect</th><th>p-value</th></tr></thead><tbody><tr><td>career_fair</td><td>0.194444</td><td>400</td><td>300</td><td>0.25</td><td>0.27</td><td>0.02</td><td>0.549798</td></tr><tr><td>organic</td><td>0.25</td><td>400</td><td>500</td><td>0.18</td><td>0.2</td><td>0.02</td><td>0.448276</td></tr><tr><td>paid_search</td><td>0.305556</td><td>200</td><td>900</td><td>0.12</td><td>0.14</td><td>0.02</td><td>0.455962</td></tr><tr><td>referral</td><td>0.25</td><td>800</td><td>100</td><td>0.35</td><td>0.37</td><td>0.02</td><td>0.693021</td></tr></tbody></table>
+<h2>Findings</h2><table><thead><tr><th>ID</th><th>Severity</th><th>Rule</th><th>Finding</th><th>Required response</th></tr></thead><tbody><tr><td>EX-001</td><td>critical</td><td>SIMPSONS_PARADOX</td><td>The aggregate treatment effect has the opposite sign from every segment-level effect.</td><td>Use blocked randomization or a pre-specified post-stratified estimand and run a confirmatory experiment.</td></tr><tr><td>EX-002</td><td>high</td><td>SEGMENT_IMBALANCE</td><td>Variant segment-distribution distance is 0.444.</td><td>Balance assignment within segment and monitor allocation at ingestion time.</td></tr></tbody></table>
+</main></body>
+</html>

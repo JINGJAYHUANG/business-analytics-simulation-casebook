@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this casebook, cite the repository and version."
+title: "Business Analytics Simulation Casebook"
+type: software
+version: 0.1.0
+date-released: 2026-09-01
+authors:
+  - name: JINGJAYHUANG
+repository-code: "https://github.com/JINGJAYHUANG/business-analytics-simulation-casebook"
+license: MIT

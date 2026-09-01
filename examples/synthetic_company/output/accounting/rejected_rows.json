@@ -1,0 +1,1 @@
+{"duplicate_payment_ids":["PAY-00020"],"orphan_payments":[{"amount":"125.00","invoice_id":"INV-MISSING","payment_date":"2026-06-28","payment_id":"PAY-ORPHAN","payment_status":"posted"}],"orphan_returns":[{"line_id":"LIN-MISSING","quantity":"1","reason":"unknown_reference","return_date":"2026-06-29","return_id":"RET-ORPHAN"}]}

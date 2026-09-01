@@ -1,0 +1,4 @@
+channel,orders,net_revenue,gross_profit,gross_margin
+direct,20,15192.00,6146.64,0.404597
+marketplace,20,48224.00,19523.08,0.404842
+partner,21,31107.00,12350.94,0.397047

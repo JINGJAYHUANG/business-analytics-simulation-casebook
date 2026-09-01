@@ -1,0 +1,114 @@
+name: Release
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Publish v0.1.0
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERSION: "0.1.0"
+      SOURCE_DATE_EPOCH: "1788220800"
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Check out CI-qualified commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+      - name: Install build tools and package
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install .
+      - name: Re-run release gates
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(basc --version)" = "basc ${VERSION}"
+          python scripts/verify_test_count.py
+          python -m unittest discover -s tests -q
+          python scripts/rebuild_examples.py --check
+          basc verify --run-dir examples/synthetic_company/output
+          python scripts/public_audit.py .
+          python scripts/check_markdown_links.py .
+      - name: Build release assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p release
+          python -m pip wheel . --no-deps --no-build-isolation --wheel-dir release
+          python scripts/build_release_assets.py --output-dir release
+          cp catalog/cases.json release/CASE_CATALOG.json
+          cp examples/synthetic_company/output/executive/summary.json release/REFERENCE_SUMMARY.json
+          python scripts/red_team.py examples/synthetic_company/output --output release/RED_TEAM_RESULTS.json
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          payload = {
+              "project": "business-analytics-simulation-casebook",
+              "version": os.environ["VERSION"],
+              "commit": os.environ["GITHUB_SHA"],
+              "qualified_commit": os.environ["QUALIFIED_SHA"],
+              "ci_workflow_run_id": os.environ["CI_RUN_ID"],
+              "release_workflow_run_id": os.environ["GITHUB_RUN_ID"],
+              "maturity": "fixture-method-and-integrity-validated",
+              "synthetic": True,
+          }
+          Path("release/RELEASE_PROVENANCE.json").write_text(
+              json.dumps(payload, sort_keys=True, separators=(",", ":")) + "\n",
+              encoding="utf-8",
+          )
+          PY
+          (cd release && sha256sum \
+            business-analytics-simulation-casebook-${VERSION}.tar.gz \
+            business-analytics-simulation-casebook-${VERSION}.zip \
+            business_analytics_simulation_casebook-${VERSION}-py3-none-any.whl \
+            CASE_CATALOG.json REFERENCE_SUMMARY.json RED_TEAM_RESULTS.json RELEASE_PROVENANCE.json \
+            > SHA256SUMS.txt)
+        env:
+          QUALIFIED_SHA: ${{ github.event.workflow_run.head_sha }}
+          CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      - name: Create immutable tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          qualified="${{ github.event.workflow_run.head_sha }}"
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+            existing="$(git rev-list -n 1 "${tag}")"
+            test "${existing}" = "${qualified}" || {
+              echo "Existing ${tag} points to ${existing}, expected ${qualified}" >&2
+              exit 1
+            }
+          else
+            git tag -a "${tag}" "${qualified}" -m "Business Analytics Simulation Casebook ${tag}"
+            git push origin "${tag}"
+          fi
+      - name: Publish GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${VERSION}"
+          if gh release view "${tag}" >/dev/null 2>&1; then
+            echo "Release ${tag} already exists; leaving immutable assets unchanged."
+            exit 0
+          fi
+          gh release create "${tag}" release/* \
+            --title "Business Analytics Simulation Casebook ${tag}" \
+            --notes-file RELEASE_NOTES.md \
+            --verify-tag

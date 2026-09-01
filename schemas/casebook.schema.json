@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/business-analytics-simulation-casebook/casebook.schema.json",
+  "title": "Business Analytics Simulation Casebook Configuration",
+  "type": "object",
+  "required": ["schema_version", "company", "quarter", "currency", "timezone", "synthetic", "case_ids"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "company": {"type": "string", "minLength": 1},
+    "quarter": {"type": "string", "pattern": "^[0-9]{4}-Q[1-4]$"},
+    "currency": {"type": "string", "pattern": "^[A-Z]{3}$"},
+    "timezone": {"type": "string", "minLength": 1},
+    "synthetic": {"const": true},
+    "case_ids": {
+      "type": "array",
+      "minItems": 4,
+      "uniqueItems": true,
+      "items": {"enum": ["supply_chain", "accounting", "experiment", "quality"]}
+    }
+  },
+  "additionalProperties": true
+}

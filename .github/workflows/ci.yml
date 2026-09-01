@@ -1,0 +1,142 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package
+        run: python -m pip install .
+      - name: Compile public source
+        run: python -m compileall -q src scripts tests
+      - name: Enforce exact test inventory
+        run: python scripts/verify_test_count.py
+      - name: Run automated tests
+        run: python -m unittest discover -s tests -q
+      - name: Diagnose cross-version fixture drift
+        if: failure() && matrix.python-version == '3.11'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/py311-diagnostic
+          basc demo --root /tmp/py311-diagnostic --fixed-time 2026-09-01T00:00:00Z --overwrite > /tmp/py311-demo.json
+          python - <<'PYDIAG'
+          import hashlib, json, sqlite3
+          from pathlib import Path
+          from business_analytics_casebook.canonical import canonical_json_bytes
+          from business_analytics_casebook.sqlite_export import sqlite_semantic_digest
+
+          committed = Path('examples/synthetic_company/output')
+          generated = Path('/tmp/py311-diagnostic/output')
+
+          def table_hashes(database):
+              con = sqlite3.connect(database)
+              try:
+                  tables = [r[0] for r in con.execute(
+                      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+                  )]
+                  result = {}
+                  for table in tables:
+                      columns = [r[1] for r in con.execute(f'PRAGMA table_info("{table}")')]
+                      rows = [list(r) for r in con.execute(f'SELECT * FROM "{table}"')]
+                      rows.sort(key=lambda row: json.dumps(row, ensure_ascii=False, sort_keys=True, default=str))
+                      result[table] = hashlib.sha256(canonical_json_bytes({"columns": columns, "rows": rows})).hexdigest()
+                  return result
+              finally:
+                  con.close()
+
+          print('committed semantic', sqlite_semantic_digest(committed / 'casebook.sqlite'))
+          print('generated semantic', sqlite_semantic_digest(generated / 'casebook.sqlite'))
+          left = table_hashes(committed / 'casebook.sqlite')
+          right = table_hashes(generated / 'casebook.sqlite')
+          print('table hash differences', {k: [left.get(k), right.get(k)] for k in sorted(set(left) | set(right)) if left.get(k) != right.get(k)})
+          print('committed run manifest', (committed / 'run_manifest.json').read_text())
+          print('generated run manifest', (generated / 'run_manifest.json').read_text())
+          for label, root in [('committed', committed), ('generated', generated)]:
+              events = [json.loads(line) for line in (root / 'events.jsonl').read_text().splitlines()]
+              sqlite_event = next(item for item in events if item['event_type'] == 'sqlite_exported')
+              print(label, 'sqlite event', json.dumps(sqlite_event, sort_keys=True))
+          PYDIAG
+      - name: Validate fixed synthetic inputs
+        run: basc validate --data-dir examples/synthetic_company/data --json
+      - name: Verify committed evidence bundle
+        run: basc verify --run-dir examples/synthetic_company/output
+      - name: Rebuild committed fixture
+        run: python scripts/rebuild_examples.py --check
+      - name: Verify deterministic execution
+        shell: bash
+        run: |
+          set -euo pipefail
+          basc demo --root /tmp/demo-a --fixed-time 2026-09-01T00:00:00Z --overwrite > /tmp/demo-a.json
+          basc demo --root /tmp/demo-b --fixed-time 2026-09-01T00:00:00Z --overwrite > /tmp/demo-b.json
+          diff -qr /tmp/demo-a /tmp/demo-b
+          basc verify --run-dir /tmp/demo-a/output
+          basc compare --baseline /tmp/demo-a/output --candidate /tmp/demo-b/output > /tmp/compare.json
+      - name: Run evidence-bundle red team
+        run: python scripts/red_team.py examples/synthetic_company/output --output /tmp/red-team.json
+      - name: Audit public boundary
+        run: python scripts/public_audit.py .
+      - name: Check Markdown links
+        run: python scripts/check_markdown_links.py .
+
+  reproducible-wheel:
+    name: Reproducible Wheel
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+      - name: Install build tools
+        run: python -m pip install --upgrade pip setuptools wheel
+      - name: Build twice and compare bytes
+        env:
+          SOURCE_DATE_EPOCH: "1788220800"
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/wheel-a /tmp/wheel-b
+          python -m pip wheel . --no-deps --no-build-isolation --wheel-dir /tmp/wheel-a
+          rm -rf build src/*.egg-info
+          python -m pip wheel . --no-deps --no-build-isolation --wheel-dir /tmp/wheel-b
+          cmp /tmp/wheel-a/*.whl /tmp/wheel-b/*.whl
+      - name: Install wheel in clean environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv /tmp/clean-venv
+          /tmp/clean-venv/bin/python -m pip install /tmp/wheel-a/*.whl
+          /tmp/clean-venv/bin/basc --version
+          /tmp/clean-venv/bin/basc inspect
+          /tmp/clean-venv/bin/basc verify --run-dir examples/synthetic_company/output
